@@ -28,16 +28,17 @@ def split_by_sections(text: str) -> list:
 
     # Regex to match typical section titles (numbered or all caps)
     section_pattern = re.compile(
-        r'(?=\n*(?:\d{1,2}(?:\.\d+)*\.?\s+|[A-Z][A-Z\s]{5,}))', re.MULTILINE
+        r'(?:^|\n)(\d{1,2}(?:\.\d+)*\.?\s+.*|[A-Z][A-Z\s]{5,})', re.MULTILINE
     )
 
-    # Split text at section headings
-    raw_sections = section_pattern.split(text)
+    matches = list(section_pattern.finditer(text))
+    chunks = []
 
-    # Filter out tiny or empty sections
-    sections = [s.strip() for s in raw_sections if len(s.strip()) > 20]
+    for i in range(len(matches)):
+        start = matches[i].start()
+        end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
+        chunk = text[start:end].strip()
+        if len(chunk) > 20:
+            chunks.append(chunk)
 
-    return sections
-
-for cell in split_by_sections(test):
-    print(cell)
+    return chunks
