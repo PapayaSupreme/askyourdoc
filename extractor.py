@@ -2,12 +2,12 @@ from azure.ai.formrecognizer import DocumentAnalysisClient
 from azure.core.credentials import AzureKeyCredential
 
 # Replace with your actual values
-endpoint = "https://formrecog-grp8.cognitiveservices.azure.com/"
-key = "DwrP53PErRePcQJwRPsSeumTlTxpCaOcGGFhg1ZG5KXxRpky6keKJQQJ99BDAC5T7U2XJ3w3AAALACOGftp1"
+FORMRECOG_ENDPOINT = "https://formrecoggrp8.cognitiveservices.azure.com/"
+FORMRECOG_APIKEY = "2aCXbKznJ57Z8sAGBNaKp1H8PAKrnZbIQYu8Fekaw0Fln5oRxDJvJQQJ99BDACYeBjFXJ3w3AAALACOGkevj"
 
 client = DocumentAnalysisClient(
-    endpoint=endpoint,
-    credential=AzureKeyCredential(key)
+    endpoint=FORMRECOG_ENDPOINT,
+    credential=AzureKeyCredential(FORMRECOG_APIKEY)
 )
 
 def pdf2formrecognizer(file_path: str) -> str:
