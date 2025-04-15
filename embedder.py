@@ -31,6 +31,8 @@ def upload_chunks_to_search(chunks):
 
     docs = []
     for i, chunk in enumerate(chunks):
+        print(f"[EMBED] Processing chunk {i + 1} / {len(chunks)}")
+        print(chunk[:200])  # peek at the beginning
         embedding = embed_text(chunk)
         docs.append({
             "id": str(uuid.uuid4()),

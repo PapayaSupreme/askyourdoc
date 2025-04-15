@@ -1,5 +1,4 @@
 import streamlit as st
-import numpy as np
 from config import *
 from chunker import split_by_sections
 from embedder import embed_text, upload_chunks_to_search
@@ -9,8 +8,6 @@ import openai
 from azure.search.documents import SearchClient
 from azure.search.documents.indexes import SearchIndexClient
 from azure.core.credentials import AzureKeyCredential
-from azure.core.exceptions import ResourceNotFoundError
-import os
 
 # === OpenAI Client ===
 client = openai.AzureOpenAI(
@@ -45,6 +42,9 @@ def native_vector_search(query_vector, top_k=3):
     )
     return [doc["content"] for doc in results]
 
+
+
+
 # === GPT Answer ===
 def ask_gpt(query, context_docs):
     context = "\n\n".join(context_docs)
@@ -60,16 +60,27 @@ Answer:"""
         messages=[{"role": "user", "content": prompt}]
     )
     return response.choices[0].message.content.strip()
+# === user query handling/clearing ===
+def handle_query():
+    user_input = st.session_state.query_input
+    if user_input:
+        with st.spinner("Thinking..."):
+            q_vec = embed_text(user_input)
+            context = native_vector_search(q_vec)
+            if not context:
+                st.session_state.answer = "No relevant documents found. Try uploading a richer PDF or adjusting your question."
+            else:
+                st.session_state.answer = ask_gpt(user_input, context)
+    st.session_state.query_input = ""  # safe to clear inside callback
 
 # === Streamlit UI ===
-previous = ""
 if "alrScanned" not in st.session_state:
     st.session_state.alrScanned = False
 
 if "last_uploaded_filename" not in st.session_state:
     st.session_state.last_uploaded_filename = ""
 
-st.title("📚 AI Document Assistant")
+st.title("📚 AskYourDoc Assistant")
 
 pdf_file = st.file_uploader("Upload a PDF to index:", type=["pdf"])
 
@@ -89,14 +100,8 @@ if pdf_file is not None:
         st.info("✅ This document was already indexed.")
 
 if pdf_file:
-    user_query = st.text_input("Ask a question about your doc:")
-    if user_query:
-        with st.spinner("Thinking..."):
-            q_vec = embed_text(user_query)
-            context = native_vector_search(q_vec)
-            if not context:
-                st.error("No relevant documents found. Try uploading a richer PDF or adjusting your question.")
-            else:
-                answer = ask_gpt(user_query, context)
-                st.subheader("💡 Answer")
-                st.write(answer)
+    st.text_input("Ask a question about your doc:",
+                  key="query_input", on_change=handle_query)
+    if "answer" in st.session_state and st.session_state.answer:
+        st.subheader("💡 Answer")
+        st.write(st.session_state.answer)
