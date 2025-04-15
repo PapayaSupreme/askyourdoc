@@ -1,7 +1,10 @@
 # MSChatbot
 small ai agent extracting text for a hackathon organized by Microsoft for EFREI, using Azure technologies
 
-PRE-REQUISITES : 
-To install required libraries, run : 
+TO RUN : streamlit run askYourDoc.py
 
-pip install openai azure-search-documents streamlit pypdf2 python-docx azure-ai-formrecognizer azure-core azure-identity
+PRE-REQUISITES : 
+  - To install required libraries, run : 
+    pip install openai azure-search-documents streamlit python-docx azure-ai-formrecognizer azure-core azure-identity
+  - Python 3.10+
+  - Read config_example.py for azure api/endpoints
