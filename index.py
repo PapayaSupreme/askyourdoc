@@ -1,47 +1,89 @@
+from azure.core.credentials import AzureKeyCredential
 from azure.search.documents.indexes import SearchIndexClient
 from azure.search.documents.indexes.models import (
-    SearchIndex, SimpleField, SearchFieldDataType,
-    VectorSearch, VectorSearchAlgorithmConfiguration, SearchField
+    SearchIndex,
+    SimpleField,
+    SearchField,
+    SearchFieldDataType,
+    HnswAlgorithmConfiguration,
+    VectorSearch,
+    AzureOpenAIVectorizer,
+    VectorSearchProfile
 )
-from azure.core.credentials import AzureKeyCredential
-from config import AZURE_SEARCH_ENDPOINT, AZURE_SEARCH_KEY, AZURE_SEARCH_INDEX
+from azure.core.exceptions import ResourceNotFoundError
 
-client = SearchIndexClient(
-    endpoint=AZURE_SEARCH_ENDPOINT,
-    credential=AzureKeyCredential(AZURE_SEARCH_KEY)
-)
 
-vector_config = VectorSearch(
-    algorithm_configurations=[
-        VectorSearchAlgorithmConfiguration(
-            name="default",
-            kind="hnsw",
-            parameters={"m": 4, "efConstruction": 400, "efSearch": 500}
-        )
-    ]
-)
-
-fields = [
-    SimpleField(name="id", type=SearchFieldDataType.String, key=True),
-    SimpleField(name="content", type=SearchFieldDataType.String, searchable=True),
-    SearchField(
-        name="content_vector",
-        type=SearchFieldDataType.Collection(SearchFieldDataType.Single),
-        searchable=True,
-        vector_search_dimensions=1536,
-        vector_search_configuration="default"
+# Create the client
+def setup_index():
+    """
+    Sets up the Azure Search index with vector search capabilities.
+    """
+    from config import AZURE_SEARCH_ENDPOINT, AZURE_SEARCH_KEY, AZURE_SEARCH_INDEX, AZURE_OPENAI_ENDPOINT, \
+        AZURE_EMBEDDING_DEPLOYMENT
+    # Create a SearchIndexClient
+    client = SearchIndexClient(
+        endpoint=AZURE_SEARCH_ENDPOINT,
+        credential=AzureKeyCredential(AZURE_SEARCH_KEY)
     )
-]
 
-index = SearchIndex(
-    name=AZURE_SEARCH_INDEX,
-    fields=fields,
-    vector_search=vector_config
-)
+    # Define vector search configuration + profile
+    vector_search = VectorSearch(
+        algorithms=[
+            HnswAlgorithmConfiguration(
+                name="hnsw-config",
+                kind="hnsw",
+                parameters={"m": 4, "efConstruction": 400, "efSearch": 500}
+            )
+        ],
+        vectorizers=[
+            AzureOpenAIVectorizer(
+                name="openai-vectorizer",
+                kind="azureOpenAI",
+                azure_open_ai_parameters={
+                    "resourceUri": AZURE_OPENAI_ENDPOINT,
+                    "deploymentId": AZURE_EMBEDDING_DEPLOYMENT
+                }
+            )
+        ],
+        profiles=[
+            VectorSearchProfile(
+                name="default",
+                algorithm_configuration_name="hnsw-config",
+                vectorizer="openai-vectorizer"
+            )
+        ]
+    )
 
-# Delete if exists
-if client.get_index(name=AZURE_SEARCH_INDEX):
-    client.delete_index(name=AZURE_SEARCH_INDEX)
+    # Define index fields
+    fields = [
+        SimpleField(name="id", type=SearchFieldDataType.String, key=True),
+        SimpleField(name="content", type=SearchFieldDataType.String, searchable=True),
+        SearchField(
+            name="content_vector",
+            type=SearchFieldDataType.Collection(SearchFieldDataType.Single),
+            searchable=True,
+            vector_search_dimensions=1536,
+            vector_search_profile_name="default"  # ✅ this is the correct property name
+        )
 
-client.create_index(index)
-print(f"✅ Index '{AZURE_SEARCH_INDEX}' created.")
+    ]
+
+    # Define the index itself
+    index = SearchIndex(
+        name=AZURE_SEARCH_INDEX,
+        fields=fields,
+        vector_search=vector_search
+    )
+
+    # Delete if already exists
+    try:
+        client.get_index(AZURE_SEARCH_INDEX)
+        client.delete_index(AZURE_SEARCH_INDEX)
+        print(f"🧹 Deleted existing index '{AZURE_SEARCH_INDEX}'")
+    except ResourceNotFoundError:
+        print(f"ℹ️ Index '{AZURE_SEARCH_INDEX}' does not exist yet. Creating fresh...")
+
+    # Create it
+    print(f"✅ Index '{AZURE_SEARCH_INDEX}' created successfully.")
+    client.create_index(index)
+
