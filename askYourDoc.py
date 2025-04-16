@@ -80,7 +80,15 @@ if "alrScanned" not in st.session_state:
 if "last_uploaded_filename" not in st.session_state:
     st.session_state.last_uploaded_filename = ""
 
-st.title("📚 AskYourDoc Assistant")
+st.set_page_config(page_title="AskYourDoc",)
+
+col1, col2 = st.columns([1, 8])
+with col1:
+    st.image("amogus_favicon.ico", width=80)
+
+with col2:
+    st.title("AskYourDoc Assistant")
+
 
 pdf_file = st.file_uploader("Upload a PDF to index:", type=["pdf"])
 
@@ -105,3 +113,33 @@ if pdf_file:
     if "answer" in st.session_state and st.session_state.answer:
         st.subheader("💡 Answer")
         st.write(st.session_state.answer)
+st.markdown("""
+<div style='text-align: center; margin-top: 20px;'>
+    <a href="mailto:pablo.ferreiraa10@gmail.com" target="_blank" style="margin-right: 20px; text-decoration: none;">
+        📧 Contact Dev
+    </a>
+    <a href="https://github.com/PapayaSupreme/askyourdoc" target="_blank" style="text-decoration: none;">
+        🌐 GitHub Repository
+    </a>
+</div>
+""", unsafe_allow_html=True)
+st.markdown("""
+    <style>
+    .footer {
+        position: fixed;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        background-color: #e8f2ff;
+        color: #444;
+        text-align: center;
+        padding: 10px 0;
+        font-size: 0.85rem;
+        z-index: 9999;
+        border-top: 1px solid #ccc;
+    }
+    </style>
+    <div class="footer">
+        GNU 3.0 License © 2025 by Pablo FERREIRA. All rights reserved.
+    </div>
+""", unsafe_allow_html=True)

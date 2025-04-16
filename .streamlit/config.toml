@@ -1,0 +1,9 @@
+[global]
+toolbarMode = "viewer"
+
+[theme]
+base="light"
+
+[server]
+enableCORS = false
+port = 8000

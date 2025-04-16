@@ -6,4 +6,4 @@ TO RUN : streamlit run askYourDoc.py
 PRE-REQUISITES : 
   - To install required libraries, run what's in requirements.txt
   - Python 3.10+
-  - Read config_example.py for azure api/endpoints
+  - Read var_env_example.env for azure api/endpoints
