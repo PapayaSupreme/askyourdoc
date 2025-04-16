@@ -1,4 +1,5 @@
 import openai
+import time
 from math import ceil
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from azure.search.documents import SearchClient
@@ -15,20 +16,25 @@ client = openai.AzureOpenAI(
     azure_endpoint=AZURE_OPENAI_ENDPOINT
 )
 
+def embed_text(text: str, retries=3, delay=10):
+    for attempt in range(retries):
+        try:
+            response = client.embeddings.create(
+                input=text,
+                model=AZURE_EMBEDDING_DEPLOYMENT
+            )
+            return response.data[0].embedding
+        except openai.RateLimitError:
+            print(f"[RateLimit] Backing off {delay}s (Attempt {attempt+1})...")
+            time.sleep(delay)
+    raise RuntimeError("Exceeded retries for embedding.")
+
 def embed_chunk(i, chunk):
     return {
         "id": f"chunk-{i}",
         "content": chunk,
         "content_vector": embed_text(chunk)
     }
-
-def embed_text(text: str):
-    response = client.embeddings.create(
-        input=text,
-        model=AZURE_EMBEDDING_DEPLOYMENT
-    )
-    return response.data[0].embedding
-
 
 def upload_chunks_to_search(chunks):
     client = SearchClient(
@@ -38,10 +44,12 @@ def upload_chunks_to_search(chunks):
     )
 
     docs = []
-    with ThreadPoolExecutor(max_workers=5) as executor:
+    # You can set this to 1 or 2 if rate limits are tight
+    with ThreadPoolExecutor(max_workers=2) as executor:
         futures = [executor.submit(embed_chunk, i, chunk) for i, chunk in enumerate(chunks)]
         for future in as_completed(futures):
             docs.append(future.result())
+
     print(f"[DEBUG] Uploading {len(docs)} documents")
     print(f"[DEBUG] Sample chunk: {chunks[0][:100] if chunks else 'No chunks'}")
     batch_size = 100
