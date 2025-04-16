@@ -1,6 +1,8 @@
 from azure.ai.formrecognizer import DocumentAnalysisClient
 from azure.core.credentials import AzureKeyCredential
-
+from config import (
+    FORMRECOG_ENDPOINT, FORMRECOG_APIKEY
+)
 # Replace with your actual values
 
 client = DocumentAnalysisClient(
